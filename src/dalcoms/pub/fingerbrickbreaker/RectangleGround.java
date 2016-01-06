@@ -1,0 +1,15 @@
+package dalcoms.pub.fingerbrickbreaker;
+
+import dalcoms.pub.fingerbrickbreaker.scene.SceneGame;
+
+public class RectangleGround extends RectanglePhysics {
+
+	public RectangleGround( float pX, float pY, float pWidth, float pHeight, SceneGame pSceneGame ) {
+		super( pX, pY, pWidth, pHeight, pSceneGame );
+	}
+
+	public RectangleGround( float pWidth, float pHeight, SceneGame pSceneGame ) {
+		super( 0f, 0f, pWidth, pHeight, pSceneGame );
+	}
+
+}
