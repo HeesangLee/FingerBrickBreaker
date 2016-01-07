@@ -11,11 +11,14 @@ import org.andengine.engine.handler.timer.TimerHandler;
 import org.andengine.entity.modifier.MoveXModifier;
 import org.andengine.entity.modifier.ScaleModifier;
 import org.andengine.entity.primitive.Rectangle;
+import org.andengine.entity.scene.IOnSceneTouchListener;
+import org.andengine.entity.scene.Scene;
 import org.andengine.entity.scene.background.Background;
 import org.andengine.entity.shape.IAreaShape;
 import org.andengine.entity.sprite.Sprite;
 import org.andengine.entity.text.Text;
 import org.andengine.extension.physics.box2d.PhysicsWorld;
+import org.andengine.input.touch.TouchEvent;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
 
 import android.app.Activity;
@@ -28,6 +31,7 @@ import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.Manifold;
 
 import dalcoms.pub.fingerbrickbreaker.BallSprite;
+import dalcoms.pub.fingerbrickbreaker.HaloOfBallSprite;
 import dalcoms.pub.fingerbrickbreaker.RectangleBrick;
 import dalcoms.pub.fingerbrickbreaker.RectangleGround;
 import dalcoms.pub.fingerbrickbreaker.ResourcesManager;
@@ -36,7 +40,7 @@ import dalcoms.pub.fingerbrickbreaker.level.JsonDataBrick;
 import dalcoms.pub.fingerbrickbreaker.level.JsonDataEntity;
 import dalcoms.pub.fingerbrickbreaker.level.JsonDataLevel;
 
-public class SceneGame extends BaseScene {
+public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 	private final String TAG = this.getClass().getSimpleName();
 
 	private PhysicsWorld physicsWorld;
@@ -45,6 +49,8 @@ public class SceneGame extends BaseScene {
 	HsMath hsMath;
 
 	ArrayList<IAreaShape> mIAreaShapeDetachOnPlay = new ArrayList<IAreaShape>();
+
+	HaloOfBallSprite mHaloOfBallSprite;
 
 	private int mGameTimePerGameTimer = 0;
 	//	final private int tankNum = 5;
@@ -77,6 +83,19 @@ public class SceneGame extends BaseScene {
 			}
 		} );
 
+		this.engine.registerUpdateHandler( new TimerHandler( 0.1f, new ITimerCallback() {
+
+			@Override
+			public void onTimePassed( TimerHandler pTimerHandler ) {
+				engine.unregisterUpdateHandler( pTimerHandler );
+				setOnSceneTouchListenerDelay();
+			}
+		} ) );
+
+	}
+
+	private void setOnSceneTouchListenerDelay( ) {
+		setOnSceneTouchListener( this );
 	}
 
 	private void initPools( ) {
@@ -130,7 +149,6 @@ public class SceneGame extends BaseScene {
 			public void endContact( Contact contact ) {
 				final Fixture x1 = contact.getFixtureA();
 				final Fixture x2 = contact.getFixtureB();
-
 			}
 
 			@Override
@@ -166,10 +184,23 @@ public class SceneGame extends BaseScene {
 	private void attachEntity( JsonDataEntity pJsonDataEntity ) {
 		if ( pJsonDataEntity.getName().equals( "groundRect" ) ) {
 			attachGroundRectEntity( pJsonDataEntity );
+		} else if ( pJsonDataEntity.getName().equals( "halo" ) ) {
+			attachHaloOfBall( pJsonDataEntity );
 		} else if ( pJsonDataEntity.getName().equals( "mainBall" ) ) {
 			attachBall( pJsonDataEntity );
 		}
 
+	}
+
+	private void attachHaloOfBall( JsonDataEntity pJsonDataEntity ) {
+		final float pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
+		final float pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
+
+		this.mHaloOfBallSprite = new HaloOfBallSprite( pX, pY, resourcesManager.regionCicle225, vbom )
+				.setSceneGame( this );
+		this.mHaloOfBallSprite.setColor( pJsonDataEntity.getColor() );
+		attachChild( mHaloOfBallSprite );
+		registerTouchArea( mHaloOfBallSprite );
 	}
 
 	private void attachGroundRectEntity( JsonDataEntity pJsonDataEntity ) {
@@ -202,8 +233,15 @@ public class SceneGame extends BaseScene {
 
 	private void attachBall( JsonDataEntity pJsonDataEntity ) {
 		//Strongly don't use position.layout of brick.
-		final float pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
-		final float pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
+		float pX = 0;
+		float pY = 0;
+		if ( this.mHaloOfBallSprite == null ) {
+			pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
+			pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
+		} else {
+			pX = this.mHaloOfBallSprite.getCenterX() - resourcesManager.regionBall.getWidth() * 0.5f;
+			pY = this.mHaloOfBallSprite.getCenterY() - resourcesManager.regionBall.getHeight() * 0.5f;
+		}
 
 		//Temp
 		BallSprite mSpriteBall = new BallSprite( pX, pY, resourcesManager.regionBall, vbom, camera ) {
@@ -412,6 +450,23 @@ public class SceneGame extends BaseScene {
 	@Override
 	public SceneManager getSceneManager( ) {
 		return this.sceneManager;
+	}
+
+	@Override
+	public boolean onSceneTouchEvent( Scene pScene, TouchEvent pSceneTouchEvent ) {
+		switch ( pSceneTouchEvent.getAction() ) {
+			case TouchEvent.ACTION_DOWN :
+			case TouchEvent.ACTION_MOVE :
+				if ( this.mHaloOfBallSprite.isSelected() ) {
+					this.mHaloOfBallSprite.setCenterPosition( pSceneTouchEvent.getX(), pSceneTouchEvent.getY() );
+				}
+				break;
+			default :
+				this.mHaloOfBallSprite.setFlagSelected( false );
+				break;
+		}
+
+		return false;
 	}
 
 }

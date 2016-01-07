@@ -888,6 +888,42 @@
 				},
 
 				{
+					"name": "halo",
+					"color": 
+					{
+						"r": "255",
+						"g": "255",
+						"b": "255	",
+						"a": "128"
+					},
+
+					"position": 
+					{
+						"x": "427.5",
+						"y": "1124",
+						"layout": "center_halo"
+					},
+
+					"size": 
+					{
+						"width": "225",
+						"height": "225"
+					},
+
+					"physics": 
+					{
+						"bodyType": "",
+						"bodyShape": "",
+						"fixtureDef": 
+						{
+							"density": "",
+							"elasticity": "",
+							"friction": ""
+						}
+					}
+				},
+
+				{
 					"name": "mainBall",
 					"color": 
 					{
@@ -901,7 +937,7 @@
 					{
 						"x": "503",
 						"y": "1196",
-						"layout": ""
+						"layout": "center_halo"
 					},
 
 					"size": 

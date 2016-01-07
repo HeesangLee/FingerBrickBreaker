@@ -55,8 +55,7 @@ public class ResourcesManager {
 	private final Point sizeAtlasNearestPremultiplyAlpha = new Point( 1280, 1968 );
 
 	private BuildableBitmapTextureAtlas atlasBilinearPremultiplyAlpha;
-	private final Point sizeAtlasBilineaPremultiplyAlphar = new Point( 1280,
-			1968 );
+	private final Point sizeAtlasBilineaPremultiplyAlphar = new Point( 1280, 1968 );
 	// Regions
 	public ITextureRegion regionLoadingCircle;
 	public ITiledTextureRegion regionMarketShareStar;
@@ -262,7 +261,7 @@ public class ResourcesManager {
 				this.atlasNearestPremultiplyAlpha, this.activity,
 				"heart_100x80.svg", this.applyResizeFactor( 100 ),
 				this.applyResizeFactor( 80 ) );
-		
+
 		regionGameHeart = SVGBitmapTextureAtlasTextureRegionFactory.createFromAsset(
 				this.atlasNearestPremultiplyAlpha, this.activity,
 				"heart_100x80.svg", this.applyResizeFactor( 63 ),
