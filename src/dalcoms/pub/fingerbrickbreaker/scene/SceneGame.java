@@ -123,7 +123,6 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		} ) );
 
 	}
-	
 
 	private JsonDataLevel loadGameLevel( ) {
 		//		this.mGameLevel = sceneManager.getGameLevelData().getSelectedLevel();
@@ -242,12 +241,12 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		attachChild( mHaloOfBallSprite );
 		registerTouchArea( mHaloOfBallSprite );
 	}
-	
-	public HaloOfBallSprite getHaloOfBall(){
+
+	public HaloOfBallSprite getHaloOfBall( ) {
 		return this.mHaloOfBallSprite;
 	}
-	
-	public BallSprite getMainBall(){
+
+	public BallSprite getMainBall( ) {
 		return this.mMainBall;
 	}
 
@@ -270,7 +269,7 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 			@Override
 			public void onDie( ) {
-				// TODO Auto-generated method stub
+				this.safeByeBye();
 
 			}
 		};
@@ -278,7 +277,6 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		mMainBall.createPhysics( "mainBall", pJsonDataEntity.getBodyType(), pJsonDataEntity.getFixtureDef() );
 		attachChild( mMainBall );
 	}
-	
 
 	private void attachDefaultSprite( ) {
 		attachGameHeart();

@@ -27,6 +27,8 @@ public abstract class BallSprite extends Sprite {
 	PhysicsConnector mPhysicsConnector;
 	private Sprite mInnerBall;
 	private Vector2 mFingerThrowVelocity = new Vector2();
+	private float mDeadLineUpper;
+	private float mDeadLineLower;
 
 	public BallSprite( float pX, float pY, ITextureRegion pTextureRegion, Color pBallColor,
 			ITextureRegion pInnerBallRegion, Color pInnerColor, SceneGame pSceneGame ) {
@@ -34,6 +36,8 @@ public abstract class BallSprite extends Sprite {
 
 		mSceneGame = pSceneGame;
 		mPhysicsWorld = pSceneGame.getPhysicsWorld();
+
+		setDeadLineY( 0f, mSceneGame.getCamera().getHeight() );//Set default dead line
 
 		final Color fBallColor = pBallColor;
 		final ITextureRegion fInnerBallRegion = pInnerBallRegion;
@@ -47,6 +51,19 @@ public abstract class BallSprite extends Sprite {
 				attachInnerBall( fInnerBallRegion, fInnerColor );
 			}
 		} );
+	}
+
+	public void setDeadLineY( float pDeadLineUpper, float pDeadLineLower ) {
+		this.mDeadLineUpper = pDeadLineUpper;
+		this.mDeadLineLower = pDeadLineLower;
+	}
+
+	public float getDeadLineUpper( ) {
+		return this.mDeadLineUpper;
+	}
+
+	public float getDeadLineLower( ) {
+		return this.mDeadLineLower;
 	}
 
 	private void attachInnerBall( ITextureRegion pInnerBallRegion, Color pInnerColor ) {
@@ -113,6 +130,44 @@ public abstract class BallSprite extends Sprite {
 
 	private synchronized void onUpdateCheck( ) {
 		mSceneGame.getHaloOfBall().setCenterPosition( this.getCenterX(), this.getCenterY() );
+		checkBoundaryY();
+		checkBoundaryX();
+	}
+
+	private void checkBoundaryX( ) {
+		final float nBodyX = this.getX();
+		final float pBodyX = nBodyX + this.getWidth();
+		final Vector2 pLinearVelocity = this.getBody().getLinearVelocity();
+
+		if ( nBodyX < 0 ) {
+			body.setLinearVelocity( new Vector2( -1 * pLinearVelocity.x, pLinearVelocity.y ) );
+		}
+		else if ( pBodyX > ResourcesManager.getInstance().getCamera().getWidth() ) {
+			body.setLinearVelocity( new Vector2( -1 * pLinearVelocity.x, pLinearVelocity.y ) );
+		}
+	}
+
+	private void checkBoundaryY( ) {
+		if ( isOutOfUpperLimit() || isOutOfLowerLimit() ) {
+			this.onDie();
+		}
+	}
+
+	private boolean isOutOfUpperLimit( ) {
+		boolean result = false;
+		if ( this.getY() < getDeadLineUpper() ) {
+			result = true;
+		}
+
+		return result;
+	}
+
+	private boolean isOutOfLowerLimit( ) {
+		boolean result = false;
+		if ( ( this.getY() + this.getHeight() ) > getDeadLineLower() ) {
+			result = true;
+		}
+		return result;
 	}
 
 	public Body getBody( ) {
