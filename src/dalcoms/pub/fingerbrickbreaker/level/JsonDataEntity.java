@@ -131,9 +131,10 @@ public class JsonDataEntity {
 
 		public BodyType getBodyType( ) {
 			BodyType result = BodyType.StaticBody;
+
 			if ( bodyType.equals( "static" ) ) {
 				result = BodyType.StaticBody;
-			} else if ( bodyType.equals( "dynmic" ) ) {
+			} else if ( bodyType.equals( "dynamic" ) ) {
 				result = BodyType.DynamicBody;
 			} else if ( bodyType.equals( "kinematic" ) ) {
 				result = BodyType.KinematicBody;

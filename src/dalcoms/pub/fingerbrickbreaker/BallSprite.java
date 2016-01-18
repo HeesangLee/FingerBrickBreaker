@@ -1,13 +1,19 @@
 package dalcoms.pub.fingerbrickbreaker;
 
-import org.andengine.engine.camera.Camera;
+import org.andengine.entity.IEntity;
+import org.andengine.entity.modifier.AlphaModifier;
+import org.andengine.entity.modifier.ParallelEntityModifier;
+import org.andengine.entity.modifier.ScaleModifier;
 import org.andengine.entity.sprite.Sprite;
 import org.andengine.extension.physics.box2d.PhysicsConnector;
 import org.andengine.extension.physics.box2d.PhysicsFactory;
 import org.andengine.extension.physics.box2d.PhysicsWorld;
 import org.andengine.opengl.texture.region.ITextureRegion;
-import org.andengine.opengl.vbo.VertexBufferObjectManager;
+import org.andengine.util.color.Color;
 
+import android.util.Log;
+
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -16,74 +22,148 @@ import dalcoms.pub.fingerbrickbreaker.scene.SceneGame;
 
 public abstract class BallSprite extends Sprite {
 	private Body body;
-	private Camera mCamera;
 	private PhysicsWorld mPhysicsWorld;
 	private SceneGame mSceneGame;
 	PhysicsConnector mPhysicsConnector;
+	private Sprite mInnerBall;
+	private Vector2 mFingerThrowVelocity = new Vector2();
 
-	public BallSprite( float pX, float pY, ITextureRegion pTextureRegion,
-			VertexBufferObjectManager pVertexBufferObjectManager, Camera camera ) {
+	public BallSprite( float pX, float pY, ITextureRegion pTextureRegion, Color pBallColor,
+			ITextureRegion pInnerBallRegion, Color pInnerColor, SceneGame pSceneGame ) {
+		super( pX, pY, pTextureRegion, pSceneGame.getVbom() );
 
-		super( pX, pY, pTextureRegion, pVertexBufferObjectManager );
-		mCamera = camera;
-	}
+		mSceneGame = pSceneGame;
+		mPhysicsWorld = pSceneGame.getPhysicsWorld();
 
-	public BallSprite setCamera( Camera pCamera ) {
-		this.mCamera = pCamera;
-		return this;
-	}
+		final Color fBallColor = pBallColor;
+		final ITextureRegion fInnerBallRegion = pInnerBallRegion;
+		final Color fInnerColor = pInnerColor;
 
-	public BallSprite setPhysicsWorld( PhysicsWorld pPhysicsWorld ) {
-		this.mPhysicsWorld = pPhysicsWorld;
-		return this;
-	}
+		mSceneGame.getEngine().runOnUpdateThread( new Runnable() {
 
-	public BallSprite setSceneGame( SceneGame pSceneGame ) {
-		this.mSceneGame = pSceneGame;
-		return this;
-	}
-
-	public BallSprite createPhysics( ) {
-		final float pDensity = ResourcesManager.getInstance()
-				.applyResizeFactor( 0.1f );
-		final float pElasticity = ResourcesManager.getInstance()
-				.applyResizeFactor( 0.6f );
-		final float pFriction = ResourcesManager.getInstance()
-				.applyResizeFactor( 0.10f );
-
-		FixtureDef pFixtureDef = PhysicsFactory.createFixtureDef( pDensity,
-				pElasticity, pFriction );
-
-		this.body = PhysicsFactory.createCircleBody( this.mPhysicsWorld, 0f, 0f,
-				this.getHeight() * 0.5f, BodyType.DynamicBody, pFixtureDef );
-
-		body.setTransform(
-				( this.getX() + this.getWidth() * 0.5f ) / PhysicsConnector.PIXEL_TO_METER_RATIO_DEFAULT,
-				( this.getY() + this.getHeight() * 0.5f ) / PhysicsConnector.PIXEL_TO_METER_RATIO_DEFAULT,
-				body.getAngle() );
-
-		this.body.setUserData( "ball" );
-
-		this.mPhysicsConnector = new PhysicsConnector( this, this.body, true,
-				true ) {
 			@Override
-			public void onUpdate( float pSecondsElapsed ) {
-				super.onUpdate( pSecondsElapsed );
-				onUpdateCheck();
+			public void run( ) {
+				setColor( fBallColor );
+				attachInnerBall( fInnerBallRegion, fInnerColor );
 			}
-		};
+		} );
+	}
 
-		this.mPhysicsWorld.registerPhysicsConnector( this.mPhysicsConnector );
+	private void attachInnerBall( ITextureRegion pInnerBallRegion, Color pInnerColor ) {
+		final float pX = ( this.getWidth() - pInnerBallRegion.getWidth() ) * 0.5f;
+		final float pY = ( this.getHeight() - pInnerBallRegion.getHeight() ) * 0.5f;
+
+		mInnerBall = new Sprite( pX, pY, pInnerBallRegion, mSceneGame.getVbom() );
+		mInnerBall.setColor( pInnerColor );
+		attachChild( mInnerBall );
+	}
+
+	public boolean setInnerColor( Color pColor ) {
+		boolean result = false;
+		if ( mInnerBall != null ) {
+			result = true;
+			mInnerBall.setColor( pColor );
+		}
+		return result;
+	}
+
+	public float getCenterX( ) {
+		return this.getX() + this.getWidth() * 0.5f;
+	}
+
+	public float getCenterY( ) {
+		return this.getY() + this.getHeight() * 0.5f;
+	}
+
+	public void setCenterPosition( float pCenterX, float pCenterY ) {
+		this.setPosition( pCenterX - this.getWidth() * 0.5f, pCenterY - this.getHeight() * 0.5f );
+	}
+
+	public BallSprite createPhysics( String pUserData, BodyType pBodyType, FixtureDef pFixtureDef ) {
+
+		pFixtureDef.density = this.mSceneGame.getResourcesManager().applyResizeFactor( pFixtureDef.density );
+		pFixtureDef.restitution = this.mSceneGame.getResourcesManager().applyResizeFactor(
+				pFixtureDef.restitution );
+		pFixtureDef.friction = this.mSceneGame.getResourcesManager().applyResizeFactor( pFixtureDef.friction );
+
+		if ( body == null ) {
+			this.body = PhysicsFactory.createCircleBody( this.mPhysicsWorld, 0f, 0f,
+					this.getHeight() * 0.5f, pBodyType, pFixtureDef );
+
+			body.setTransform(
+					( this.getX() + this.getWidth() * 0.5f ) / PhysicsConnector.PIXEL_TO_METER_RATIO_DEFAULT,
+					( this.getY() + this.getHeight() * 0.5f ) / PhysicsConnector.PIXEL_TO_METER_RATIO_DEFAULT,
+					body.getAngle() );
+
+			body.setUserData( pUserData );
+			body.setFixedRotation( false );
+
+			mPhysicsConnector = new PhysicsConnector( this, body, true, true ) {
+				@Override
+				public void onUpdate( float pSecondsElapsed ) {
+					super.onUpdate( pSecondsElapsed );
+					onUpdateCheck();
+				}
+			};
+		}
+		mPhysicsWorld.registerPhysicsConnector( mPhysicsConnector );
 
 		return this;
 	}
 
-	private void onUpdateCheck( ) {
-
+	private synchronized void onUpdateCheck( ) {
+		mSceneGame.getHaloOfBall().setCenterPosition( this.getCenterX(), this.getCenterY() );
 	}
 
 	public Body getBody( ) {
 		return this.body;
+	}
+
+	public void clearFlagVars( ) {
+		//Include flags must to be cleared
+	}
+
+	public void byebye( ) {
+		Log.v( this.getClass().getSimpleName(), "byebye:" + body.getUserData().toString() );
+
+		clearFlagVars();
+
+		mPhysicsWorld.unregisterPhysicsConnector( this.mPhysicsConnector );
+		this.getBody().setActive( false );
+		mPhysicsWorld.destroyBody( this.getBody() );
+		this.setIgnoreUpdate( true );
+		this.setVisible( false );
+		this.detachSelf();
+	}
+
+	public void safeByeBye( ) {
+		mSceneGame.getEngine().runOnUpdateThread( new Runnable() {
+
+			@Override
+			public void run( ) {
+				byebye();
+			}
+		} );
+	}
+
+	public void scaleAlphaByeBye( float pDisapearTime ) {
+		this.registerEntityModifier( new ParallelEntityModifier(
+				new ScaleModifier( pDisapearTime, 1f, 2.0f ),
+				new AlphaModifier( pDisapearTime, 0.78f, 0f ) {
+					@Override
+					protected void onModifierFinished( IEntity pItem ) {
+						super.onModifierFinished( pItem );
+						safeByeBye();
+					}
+				} ) );
+	}
+
+	public void setFingerThrowVelocity( float pVelocityX, float pVelocityY ) {
+		this.mFingerThrowVelocity.set( pVelocityX, pVelocityY );
+	}
+
+	public Vector2 getFingerThrowVelocity( ) {
+		return this.mFingerThrowVelocity;
 	}
 
 	public abstract void onDie( );

@@ -948,7 +948,7 @@
 
 					"physics": 
 					{
-						"bodyType": "dynamics",
+						"bodyType": "dynamic",
 						"bodyShape": "circle",
 						"fixtureDef": 
 						{

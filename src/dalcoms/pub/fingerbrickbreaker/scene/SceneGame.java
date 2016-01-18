@@ -20,10 +20,17 @@ import org.andengine.entity.text.Text;
 import org.andengine.extension.physics.box2d.PhysicsWorld;
 import org.andengine.input.touch.TouchEvent;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
+import org.andengine.util.color.Color;
 
 import android.app.Activity;
+import android.support.v4.view.VelocityTrackerCompat;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.VelocityTracker;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
@@ -51,6 +58,7 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 	ArrayList<IAreaShape> mIAreaShapeDetachOnPlay = new ArrayList<IAreaShape>();
 
 	HaloOfBallSprite mHaloOfBallSprite;
+	BallSprite mMainBall;
 
 	private int mGameTimePerGameTimer = 0;
 	//	final private int tankNum = 5;
@@ -60,6 +68,9 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 	ArrayList<Sprite> mGameHearts = new ArrayList<Sprite>();
 
 	private JsonDataLevel mLevelData;
+
+	private VelocityTracker mVelocityTracker = null;
+	private final int VELOCITY_TRACKER_CAL_UNIT = 30;
 
 	@Override
 	public void createScene( ) {
@@ -112,6 +123,7 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		} ) );
 
 	}
+	
 
 	private JsonDataLevel loadGameLevel( ) {
 		//		this.mGameLevel = sceneManager.getGameLevelData().getSelectedLevel();
@@ -192,17 +204,6 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 	}
 
-	private void attachHaloOfBall( JsonDataEntity pJsonDataEntity ) {
-		final float pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
-		final float pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
-
-		this.mHaloOfBallSprite = new HaloOfBallSprite( pX, pY, resourcesManager.regionCicle225, vbom )
-				.setSceneGame( this );
-		this.mHaloOfBallSprite.setColor( pJsonDataEntity.getColor() );
-		attachChild( mHaloOfBallSprite );
-		registerTouchArea( mHaloOfBallSprite );
-	}
-
 	private void attachGroundRectEntity( JsonDataEntity pJsonDataEntity ) {
 		//Strongly don't use position.layout of brick.
 		final float pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
@@ -231,6 +232,25 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		attachChild( tRect );
 	}
 
+	private void attachHaloOfBall( JsonDataEntity pJsonDataEntity ) {
+		final float pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
+		final float pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
+
+		this.mHaloOfBallSprite = new HaloOfBallSprite( pX, pY, resourcesManager.regionCicle225, vbom )
+				.setSceneGame( this );
+		this.mHaloOfBallSprite.setColor( pJsonDataEntity.getColor() );
+		attachChild( mHaloOfBallSprite );
+		registerTouchArea( mHaloOfBallSprite );
+	}
+	
+	public HaloOfBallSprite getHaloOfBall(){
+		return this.mHaloOfBallSprite;
+	}
+	
+	public BallSprite getMainBall(){
+		return this.mMainBall;
+	}
+
 	private void attachBall( JsonDataEntity pJsonDataEntity ) {
 		//Strongly don't use position.layout of brick.
 		float pX = 0;
@@ -239,24 +259,26 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 			pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
 			pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
 		} else {
-			pX = this.mHaloOfBallSprite.getCenterX() - resourcesManager.regionBall.getWidth() * 0.5f;
-			pY = this.mHaloOfBallSprite.getCenterY() - resourcesManager.regionBall.getHeight() * 0.5f;
+			pX = this.mHaloOfBallSprite.getCenterX() - resourcesManager.regionCicle80.getWidth() * 0.5f;
+			pY = this.mHaloOfBallSprite.getCenterY() - resourcesManager.regionCicle80.getHeight() * 0.5f;
 		}
 
-		//Temp
-		BallSprite mSpriteBall = new BallSprite( pX, pY, resourcesManager.regionBall, vbom, camera ) {
+		final Color pInnerColor = pJsonDataEntity.getColor();
+
+		this.mMainBall = new BallSprite( pX, pY, resourcesManager.regionCicle80, appColor.BALL,
+				resourcesManager.regionCicle38, pInnerColor, this ) {
 
 			@Override
 			public void onDie( ) {
 				// TODO Auto-generated method stub
 
 			}
-		}.setSceneGame( this ).setPhysicsWorld( this.physicsWorld );
+		};
 
-		mSpriteBall.createPhysics();
-
-		attachChild( mSpriteBall );
+		mMainBall.createPhysics( "mainBall", pJsonDataEntity.getBodyType(), pJsonDataEntity.getFixtureDef() );
+		attachChild( mMainBall );
 	}
+	
 
 	private void attachDefaultSprite( ) {
 		attachGameHeart();
@@ -454,19 +476,68 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 	@Override
 	public boolean onSceneTouchEvent( Scene pScene, TouchEvent pSceneTouchEvent ) {
+		MotionEvent pMotionEvent = pSceneTouchEvent.getMotionEvent();
+		int pointerId = pSceneTouchEvent.getPointerID();
+
 		switch ( pSceneTouchEvent.getAction() ) {
 			case TouchEvent.ACTION_DOWN :
+				if ( mVelocityTracker == null ) {
+					mVelocityTracker = VelocityTracker.obtain();
+				} else {
+					mVelocityTracker.clear();
+					mVelocityTracker.addMovement( pMotionEvent );
+				}
 			case TouchEvent.ACTION_MOVE :
 				if ( this.mHaloOfBallSprite.isSelected() ) {
-					this.mHaloOfBallSprite.setCenterPosition( pSceneTouchEvent.getX(), pSceneTouchEvent.getY() );
+					//					this.mHaloOfBallSprite.setCenterPosition( pSceneTouchEvent.getX(),
+					//							pSceneTouchEvent.getY() );
+
+					mVelocityTracker.addMovement( pMotionEvent );
+					mVelocityTracker.computeCurrentVelocity( VELOCITY_TRACKER_CAL_UNIT );
+
+					Log.d( "",
+							String.valueOf( VelocityTrackerCompat.getXVelocity( mVelocityTracker, pointerId ) )
+									+ ","
+									+ String.valueOf( VelocityTrackerCompat.getYVelocity( mVelocityTracker,
+											pointerId ) ) );
+
+					mMainBall.setFingerThrowVelocity(
+							VelocityTrackerCompat.getXVelocity( mVelocityTracker, pointerId ),
+							VelocityTrackerCompat.getYVelocity( mVelocityTracker, pointerId ) );
+				} else {
+					if ( mVelocityTracker != null ) {
+						mVelocityTracker.clear();
+					}
 				}
 				break;
 			default :
-				this.mHaloOfBallSprite.setFlagSelected( false );
+				if ( mHaloOfBallSprite.isSelected() == true ) {
+					this.mHaloOfBallSprite.setFlagSelected( false );
+					testThowBall();
+				}
+
+				if ( mVelocityTracker != null ) {
+					mVelocityTracker.recycle();
+					mVelocityTracker = null;
+				}
 				break;
 		}
 
 		return false;
+	}
+
+	public void testThowBall( ) {
+		if ( this.mMainBall.getBody().getType() == BodyType.DynamicBody ) {
+			Log.d( "", "dynamic body" );
+		} else if ( this.mMainBall.getBody().getType() == BodyType.KinematicBody ) {
+			Log.d( "", "kinematic body" );
+		} else if ( this.mMainBall.getBody().getType() == BodyType.StaticBody ) {
+			Log.d( "", "static body" );
+		} else {
+			Log.d( "", "what?" );
+		}
+		this.mMainBall.getBody().setLinearVelocity( this.mMainBall.getFingerThrowVelocity() );
+
 	}
 
 }
