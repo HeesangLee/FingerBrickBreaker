@@ -22,26 +22,6 @@ public class HaloOfBallSprite extends Sprite {
 		return this;
 	}
 
-	@Override
-	public boolean onAreaTouched( TouchEvent pSceneTouchEvent, float pTouchAreaLocalX, float pTouchAreaLocalY ) {
-		switch ( pSceneTouchEvent.getAction() ) {
-			case TouchEvent.ACTION_DOWN :
-				setFlagSelected( true );
-				catchBall();
-				break;
-			case TouchEvent.ACTION_MOVE :
-				//				setFlagSelected( true );
-				break;
-			case TouchEvent.ACTION_OUTSIDE :
-			case TouchEvent.ACTION_CANCEL :
-			case TouchEvent.ACTION_UP :
-				//				setFlagSelected( false );
-				break;
-		}
-
-		return super.onAreaTouched( pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY );
-	}
-
 	private void catchBall( ) {
 		mSceneGame.getMainBall().getBody().setLinearVelocity( 0f, 0f );
 	}
@@ -54,6 +34,14 @@ public class HaloOfBallSprite extends Sprite {
 		this.flagSelected = pFlagSelected;
 		float alpha = pFlagSelected ? 0.8f : 0.2f;
 		this.setAlpha( alpha );
+	}
+
+	public void setSelectedAlpha( boolean isSelected ) {
+		if ( isSelected ) {
+			this.setAlpha( 0.85f );
+		} else {
+			this.setAlpha( 0.2f );
+		}
 	}
 
 	public float getCenterX( ) {

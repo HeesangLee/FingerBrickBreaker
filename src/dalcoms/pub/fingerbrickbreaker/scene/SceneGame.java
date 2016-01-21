@@ -70,7 +70,9 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 	private JsonDataLevel mLevelData;
 
 	private VelocityTracker mVelocityTracker = null;
-	private final int VELOCITY_TRACKER_CAL_UNIT = 30;
+	private final int VELOCITY_TRACKER_CAL_UNIT = 32;
+
+	private float BALL_TOUCH_AREA;
 
 	@Override
 	public void createScene( ) {
@@ -113,15 +115,21 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 	}
 
-	private void registerUpdateHandlerForGame( float timeSecond ) {
+	synchronized private void registerUpdateHandlerForGame( float timeSecond ) {
 		this.engine.registerUpdateHandler( new TimerHandler( timeSecond, true, new ITimerCallback() {
 
 			@Override
 			public void onTimePassed( final TimerHandler pTimerHandler ) {
 				mGameTimePerGameTimer++;
+
+				checkHaloAlpha();
 			}
 		} ) );
 
+	}
+
+	private void checkHaloAlpha( ) {
+		this.mHaloOfBallSprite.setSelectedAlpha( mMainBall.isSelected() );
 	}
 
 	private JsonDataLevel loadGameLevel( ) {
@@ -239,7 +247,6 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 				.setSceneGame( this );
 		this.mHaloOfBallSprite.setColor( pJsonDataEntity.getColor() );
 		attachChild( mHaloOfBallSprite );
-		registerTouchArea( mHaloOfBallSprite );
 	}
 
 	public HaloOfBallSprite getHaloOfBall( ) {
@@ -276,6 +283,8 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 		mMainBall.createPhysics( "mainBall", pJsonDataEntity.getBodyType(), pJsonDataEntity.getFixtureDef() );
 		attachChild( mMainBall );
+
+		this.BALL_TOUCH_AREA = mMainBall.getWidth() * 3f;
 	}
 
 	private void attachDefaultSprite( ) {
@@ -479,16 +488,21 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 		switch ( pSceneTouchEvent.getAction() ) {
 			case TouchEvent.ACTION_DOWN :
-				if ( mVelocityTracker == null ) {
-					mVelocityTracker = VelocityTracker.obtain();
-				} else {
-					mVelocityTracker.clear();
-					mVelocityTracker.addMovement( pMotionEvent );
+				if ( this.mMainBall.setSelect( mMainBall.isOnTouchArea( pSceneTouchEvent.getX(),
+						pSceneTouchEvent.getY(), this.BALL_TOUCH_AREA ) ) ) { // is selected
+
+					this.mMainBall.decelerateBall();
+
+					if ( mVelocityTracker == null ) {
+						mVelocityTracker = VelocityTracker.obtain();
+					} else {
+						mVelocityTracker.clear();
+						mVelocityTracker.addMovement( pMotionEvent );
+					}
 				}
+
 			case TouchEvent.ACTION_MOVE :
-				if ( this.mHaloOfBallSprite.isSelected() ) {
-					//					this.mHaloOfBallSprite.setCenterPosition( pSceneTouchEvent.getX(),
-					//							pSceneTouchEvent.getY() );
+				if ( this.mMainBall.isSelected() ) {
 
 					mVelocityTracker.addMovement( pMotionEvent );
 					mVelocityTracker.computeCurrentVelocity( VELOCITY_TRACKER_CAL_UNIT );
@@ -502,6 +516,8 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 					mMainBall.setFingerThrowVelocity(
 							VelocityTrackerCompat.getXVelocity( mVelocityTracker, pointerId ),
 							VelocityTrackerCompat.getYVelocity( mVelocityTracker, pointerId ) );
+					
+					testThowBall();
 				} else {
 					if ( mVelocityTracker != null ) {
 						mVelocityTracker.clear();
@@ -509,8 +525,8 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 				}
 				break;
 			default :
-				if ( mHaloOfBallSprite.isSelected() == true ) {
-					this.mHaloOfBallSprite.setFlagSelected( false );
+				if ( mMainBall.isSelected() == true ) {
+					this.mMainBall.setSelect( false );
 					testThowBall();
 				}
 
@@ -525,16 +541,8 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 	}
 
 	public void testThowBall( ) {
-		if ( this.mMainBall.getBody().getType() == BodyType.DynamicBody ) {
-			Log.d( "", "dynamic body" );
-		} else if ( this.mMainBall.getBody().getType() == BodyType.KinematicBody ) {
-			Log.d( "", "kinematic body" );
-		} else if ( this.mMainBall.getBody().getType() == BodyType.StaticBody ) {
-			Log.d( "", "static body" );
-		} else {
-			Log.d( "", "what?" );
-		}
-		this.mMainBall.getBody().setLinearVelocity( this.mMainBall.getFingerThrowVelocity() );
+		//		this.mMainBall.getBody().setLinearVelocity( this.mMainBall.getFingerThrowVelocity() );
+		this.mMainBall.throwBall();
 
 	}
 

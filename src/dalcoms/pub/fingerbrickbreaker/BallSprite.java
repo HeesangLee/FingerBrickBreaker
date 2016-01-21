@@ -29,6 +29,7 @@ public abstract class BallSprite extends Sprite {
 	private Vector2 mFingerThrowVelocity = new Vector2();
 	private float mDeadLineUpper;
 	private float mDeadLineLower;
+	private boolean mFlagIsSelected = false;
 
 	public BallSprite( float pX, float pY, ITextureRegion pTextureRegion, Color pBallColor,
 			ITextureRegion pInnerBallRegion, Color pInnerColor, SceneGame pSceneGame ) {
@@ -123,6 +124,9 @@ public abstract class BallSprite extends Sprite {
 				}
 			};
 		}
+//		TODO : must be defined on json file.
+		this.body.setLinearDamping( 0.5f );
+		
 		mPhysicsWorld.registerPhysicsConnector( mPhysicsConnector );
 
 		return this;
@@ -131,10 +135,44 @@ public abstract class BallSprite extends Sprite {
 	private synchronized void onUpdateCheck( ) {
 		mSceneGame.getHaloOfBall().setCenterPosition( this.getCenterX(), this.getCenterY() );
 		checkBoundaryY();
-		checkBoundaryX();
+		checkBoundaryX( false );
 	}
 
-	private void checkBoundaryX( ) {
+	private void checkBoundaryX( boolean isRefect ) {
+		if ( isRefect ) {
+			reflectXWall();
+		} else {
+			throughXWall();
+		}
+	}
+
+	private void throughXWall( ) {
+		final float nBodyX = this.getX();
+		final float pBodyX = nBodyX + this.getWidth();
+		final Vector2 pLinearVelocity = this.getBody().getLinearVelocity();
+		boolean isTransform = false;
+
+		if ( pBodyX < 0 ) {
+			this.setPosition( mSceneGame.getCamera().getWidth(), this.getY() );
+			isTransform = true;
+		}
+		else if ( nBodyX > mSceneGame.getCamera().getWidth() ) {
+			this.setPosition( -1f * getWidth(), this.getY() );
+			isTransform = true;
+		}
+
+		if ( isTransform ) {
+			body.setTransform(
+					this.getCenterX()
+							/ PhysicsConnector.PIXEL_TO_METER_RATIO_DEFAULT,
+					this.getCenterY()
+							/ PhysicsConnector.PIXEL_TO_METER_RATIO_DEFAULT,
+					body.getAngle() );
+			body.setLinearVelocity( new Vector2( 0.9f * pLinearVelocity.x, 0.9f * pLinearVelocity.y ) );
+		}
+	}
+
+	private void reflectXWall( ) {
 		final float nBodyX = this.getX();
 		final float pBodyX = nBodyX + this.getWidth();
 		final Vector2 pLinearVelocity = this.getBody().getLinearVelocity();
@@ -219,6 +257,57 @@ public abstract class BallSprite extends Sprite {
 
 	public Vector2 getFingerThrowVelocity( ) {
 		return this.mFingerThrowVelocity;
+	}
+
+	public void catchBall( ) {
+		this.getBody().setLinearVelocity( 0f, 0f );
+	}
+
+	public void decelerateBall( float pRatio ) {
+		final float ratio = pRatio > 1f ? 1f : pRatio;
+
+		final float pVelocityX = this.getBody().getLinearVelocity().x * ratio;
+		final float pVelocityY = this.getBody().getLinearVelocity().x * ratio;
+
+		this.getBody().setLinearVelocity( pVelocityX, pVelocityY );
+	}
+
+	public void decelerateBall( ) {
+		decelerateBall( 0.5f );
+	}
+
+	public void throwBall( ) {
+		throwBall( this.getFingerThrowVelocity() );
+	}
+
+	public void throwBall( Vector2 pVector2 ) {
+		this.getBody().setLinearVelocity( pVector2 );
+	}
+
+	public boolean isOnTouchArea( float pSceneTouchX, float pSceneTouchY, float pLen ) {//pLen have to be resized by resize factor.
+		boolean result = false;
+
+		final float thisCenterX = this.getCenterX();
+		final float thisCenterY = this.getCenterY();
+
+		final float diffX = thisCenterX - pSceneTouchX;
+		final float diffY = thisCenterY - pSceneTouchY;
+
+		float len2 = diffX * diffX + diffY * diffY;
+		if ( ( pLen * pLen ) > len2 ) {
+			result = true;
+		}
+
+		return result;
+	}
+
+	public boolean isSelected( ) {
+		return this.mFlagIsSelected;
+	}
+
+	public boolean setSelect( boolean pSelect ) {
+		this.mFlagIsSelected = pSelect;
+		return this.mFlagIsSelected;
 	}
 
 	public abstract void onDie( );
