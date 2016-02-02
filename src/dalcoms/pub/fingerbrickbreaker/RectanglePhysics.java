@@ -18,7 +18,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 
 import dalcoms.pub.fingerbrickbreaker.scene.SceneGame;
 
-public class RectanglePhysics extends Rectangle {
+public abstract class RectanglePhysics extends Rectangle {
 	private final String TAG = this.getClass().getSimpleName();
 
 	private Body body;
@@ -82,9 +82,7 @@ public class RectanglePhysics extends Rectangle {
 		return this;
 	}
 
-	private synchronized void onUpdateCheck( ) {
-
-	}
+	public abstract  void onUpdateCheck( ) ;
 
 	public Body getBody( ) {
 		return this.body;
@@ -127,6 +125,10 @@ public class RectanglePhysics extends Rectangle {
 						safeByeBye();
 					}
 				} ) );
+	}
+	
+	public SceneGame getGameScene(){
+		return this.mSceneGame;
 	}
 
 }

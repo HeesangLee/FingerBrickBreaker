@@ -12,4 +12,10 @@ public class RectangleGround extends RectanglePhysics {
 		super( 0f, 0f, pWidth, pHeight, pSceneGame );
 	}
 
+	@Override
+	public void onUpdateCheck( ) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

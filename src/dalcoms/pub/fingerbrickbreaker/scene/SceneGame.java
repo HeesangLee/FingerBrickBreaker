@@ -1,6 +1,8 @@
 package dalcoms.pub.fingerbrickbreaker.scene;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lib.dalcoms.andengineheesanglib.utils.HsMath;
 
@@ -174,19 +176,73 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 			public void beginContact( Contact contact ) {
 				final Fixture x1 = contact.getFixtureA();
 				final Fixture x2 = contact.getFixtureB();
+
+				if ( isBrickContactWithBall( x1, x2 ) ) {
+					mMainBall.setSelect( false );
+					Log.d( "contact", getBrickUserName( x1, x2 ) );
+				}
 			}
 		};
 
 		return contactListener;
 	}
 
+	private String getBrickUserName( Fixture x1, Fixture x2 ) {
+		String result = "";
+		String ptnBrick = "brick\\d+";
+		final String strX1 = ( String ) x1.getBody().getUserData();
+		final String strX2 = ( String ) x2.getBody().getUserData();
+		if ( findString( strX1, ptnBrick ) ) {
+			result = strX1;
+		} else if ( findString( strX2, ptnBrick ) ) {
+			result = strX2;
+		}
+		return result;
+	}
+
+	private boolean isBrickContactWithBall( Fixture x1, Fixture x2 ) {
+		boolean result = false;
+
+		String ptnX1 = "brick\\d+";
+		String ptnX2 = "mainBall";
+
+		result = isContactWith( x1, x2, ptnX1, ptnX2 );
+
+		return result;
+	}
+
+	private boolean isContactWith( Fixture x1, Fixture x2, String ptnX1, String ptnX2 ) {
+		boolean result = false;
+		final String strUserNameX1 = ( String ) x1.getBody().getUserData();
+		final String strUserNameX2 = ( String ) x2.getBody().getUserData();
+
+		result = ( findString( strUserNameX1, ptnX1 ) && findString( strUserNameX2, ptnX2 ) )
+				|| ( findString( strUserNameX2, ptnX1 ) && findString( strUserNameX1, ptnX2 ) );
+		return result;
+	}
+
+	private boolean findString( String pInput, String pPattern ) {
+		boolean result = false;
+
+		Pattern p = Pattern.compile( pPattern );
+		Matcher m = p.matcher( pInput );
+
+		result = m.find();
+
+		return result;
+	}
+
 	@Override
 	public void attachSprites( ) {
 		attachDefaultSprite();
+		String pUserNamePrefix = "brick";
+		int count = 0;
 
 		for ( JsonDataBrick pBrick : mLevelData.getBricks() ) {
-			attachBrick( pBrick );
+			attachBrick( pUserNamePrefix + String.valueOf( count++ ), pBrick );
 		}
+
+		count = 0;
 
 		for ( JsonDataEntity pEntity : mLevelData.getEntities() ) {
 			attachEntity( pEntity );
@@ -194,9 +250,10 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 
 	}
 
-	private void attachBrick( JsonDataBrick pJsonDataBrick ) {
+	private void attachBrick( String pUserName, JsonDataBrick pJsonDataBrick ) {
+
 		if ( pJsonDataBrick.getName().equals( "rect" ) ) {
-			attachRectBrick( pJsonDataBrick );
+			attachRectBrick( pUserName, pJsonDataBrick );
 		}
 	}
 
@@ -225,15 +282,20 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		attachChild( tRect );
 	}
 
-	private void attachRectBrick( JsonDataBrick pJsonDataBrick ) {
+	private void attachRectBrick( String pUserName, JsonDataBrick pJsonDataBrick ) {
 		//Strongly don't use position.layout of brick.
 		final float pX = resourcesManager.applyResizeFactor( pJsonDataBrick.getX() );
 		final float pY = resourcesManager.applyResizeFactor( pJsonDataBrick.getY() );
+
 		final float pWidth = resourcesManager.applyResizeFactor( pJsonDataBrick.getWidth() );
 		final float pHeight = resourcesManager.applyResizeFactor( pJsonDataBrick.getHeight() );
 
-		RectangleBrick tRect = new RectangleBrick( pX, pY, pWidth, pHeight, this );
-		tRect.createPhysics( pJsonDataBrick.getName(), pJsonDataBrick.getBodyType(),
+		final int pBreakLevel = pJsonDataBrick.getBreakLevel();
+
+		RectangleBrick tRect = new RectangleBrick( pX, pY, pWidth, pHeight, this )
+				.setBreakLevel( pBreakLevel );
+
+		tRect.createPhysics( pUserName, pJsonDataBrick.getBodyType(),
 				pJsonDataBrick.getFixtureDef() );
 		tRect.setColor( pJsonDataBrick.getColor() );
 		attachChild( tRect );
@@ -516,7 +578,7 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 					mMainBall.setFingerThrowVelocity(
 							VelocityTrackerCompat.getXVelocity( mVelocityTracker, pointerId ),
 							VelocityTrackerCompat.getYVelocity( mVelocityTracker, pointerId ) );
-					
+
 					testThowBall();
 				} else {
 					if ( mVelocityTracker != null ) {
