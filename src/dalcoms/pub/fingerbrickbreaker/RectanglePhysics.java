@@ -26,6 +26,10 @@ public abstract class RectanglePhysics extends Rectangle {
 	private PhysicsWorld mPhysicsWorld;
 	PhysicsConnector mPhysicsConnector;
 
+	String mUserData;
+	BodyType mBodyType;
+	FixtureDef mFixtureDef;
+
 	public RectanglePhysics( float pX, float pY,
 			float pWidth, float pHeight,
 			SceneGame pSceneGame ) {
@@ -53,6 +57,10 @@ public abstract class RectanglePhysics extends Rectangle {
 	}
 
 	public RectanglePhysics createPhysics( String pUserData, BodyType pBodyType, FixtureDef pFixtureDef ) {
+		this.mUserData = pUserData;
+		this.mBodyType = pBodyType;
+		this.mFixtureDef = pFixtureDef;
+
 		pFixtureDef.density = this.mSceneGame.getResourcesManager().applyResizeFactor( pFixtureDef.density );
 		pFixtureDef.restitution = this.mSceneGame.getResourcesManager().applyResizeFactor(
 				pFixtureDef.restitution );
@@ -82,7 +90,7 @@ public abstract class RectanglePhysics extends Rectangle {
 		return this;
 	}
 
-	public abstract  void onUpdateCheck( ) ;
+	public abstract void onUpdateCheck( );
 
 	public Body getBody( ) {
 		return this.body;
@@ -99,6 +107,22 @@ public abstract class RectanglePhysics extends Rectangle {
 		this.setIgnoreUpdate( true );
 		this.setVisible( false );
 		this.detachSelf();
+	}
+
+	public void reCreateBody( ) {
+		mPhysicsWorld.unregisterPhysicsConnector( this.mPhysicsConnector );
+		this.getBody().setActive( false );
+		mPhysicsWorld.destroyBody( this.getBody() );
+		this.body = null;
+
+		mSceneGame.getEngine().runOnUpdateThread( new Runnable() {
+
+			@Override
+			public void run( ) {
+				createPhysics( mUserData, mBodyType, mFixtureDef );
+
+			}
+		} );
 	}
 
 	public void clearFlagVars( ) {
@@ -126,8 +150,8 @@ public abstract class RectanglePhysics extends Rectangle {
 					}
 				} ) );
 	}
-	
-	public SceneGame getGameScene(){
+
+	public SceneGame getGameScene( ) {
 		return this.mSceneGame;
 	}
 

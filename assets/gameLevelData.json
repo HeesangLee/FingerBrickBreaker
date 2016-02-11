@@ -378,6 +378,43 @@
 							"friction": "0"
 						}
 					}
+				},
+
+				{
+					"name": "rect",
+					"breakLevel": "3",
+					"color": 
+					{
+						"r": "225",
+						"g": "73",
+						"b": "56",
+						"a": "255"
+					},
+
+					"position": 
+					{
+						"x": "340",
+						"y": "700",
+						"layout": ""
+					},
+
+					"size": 
+					{
+						"width": "400",
+						"height": "100"
+					},
+
+					"physics": 
+					{
+						"bodyType": "static",
+						"bodyShape": "box",
+						"fixtureDef": 
+						{
+							"density": "0",
+							"elasticity": "0",
+							"friction": "0"
+						}
+					}
 				}
 			],
 
@@ -744,28 +781,29 @@
 				},
 
 				{
-					"name": "groundRect",
+					"name": "prickleV108x35",
 					"color": 
 					{
-						"r": "72",
-						"g": "62",
-						"b": "55",
+						"r": "212",
+						"g": "00",
+						"b": "0",
 						"a": "255"
 					},
 
 					"position": 
 					{
 						"x": "486",
-						"y": "1536",
+						"y": "1521",
 						"layout": ""
 					},
 
 					"size": 
 					{
 						"width": "108",
-						"height": "20"
+						"height": "35"
 					},
 
+					"rotation": "0",
 					"physics": 
 					{
 						"bodyType": "static",

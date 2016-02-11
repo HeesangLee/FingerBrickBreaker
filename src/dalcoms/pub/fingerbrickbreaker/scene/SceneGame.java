@@ -1,6 +1,8 @@
 package dalcoms.pub.fingerbrickbreaker.scene;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,6 +23,7 @@ import org.andengine.entity.sprite.Sprite;
 import org.andengine.entity.text.Text;
 import org.andengine.extension.physics.box2d.PhysicsWorld;
 import org.andengine.input.touch.TouchEvent;
+import org.andengine.opengl.texture.region.ITextureRegion;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
 import org.andengine.util.color.Color;
 
@@ -31,8 +34,6 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
@@ -75,6 +76,8 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 	private final int VELOCITY_TRACKER_CAL_UNIT = 32;
 
 	private float BALL_TOUCH_AREA;
+
+	private Map<String, RectangleBrick> mMapRectBrick = new HashMap<String, RectangleBrick>();
 
 	@Override
 	public void createScene( ) {
@@ -180,11 +183,23 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 				if ( isBrickContactWithBall( x1, x2 ) ) {
 					mMainBall.setSelect( false );
 					Log.d( "contact", getBrickUserName( x1, x2 ) );
+					breakBrick( getBrickUserName( x1, x2 ) );
+
 				}
 			}
 		};
 
 		return contactListener;
+	}
+
+	private void breakBrick( String pUserName ) {
+		if ( this.mMapRectBrick.containsKey( pUserName ) ) {
+			if ( mMapRectBrick.get( pUserName ).getBreakLevel() > 0 ) {
+				if ( mMapRectBrick.get( pUserName ).checkBreakMySelf() == true ) {
+					mMapRectBrick.get( pUserName ).scaleAlphaByeBye( 0.3f );
+				}
+			}
+		}
 	}
 
 	private String getBrickUserName( Fixture x1, Fixture x2 ) {
@@ -264,8 +279,25 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 			attachHaloOfBall( pJsonDataEntity );
 		} else if ( pJsonDataEntity.getName().equals( "mainBall" ) ) {
 			attachBall( pJsonDataEntity );
+		} else if ( pJsonDataEntity.getName().equals( "prickleV108x35" ) ) {
+			attachPrickle( pJsonDataEntity );
+		}
+	}
+
+	private void attachPrickle( JsonDataEntity pJsonDataEntity ) {
+		final float pX = resourcesManager.applyResizeFactor( pJsonDataEntity.getX() );
+		final float pY = resourcesManager.applyResizeFactor( pJsonDataEntity.getY() );
+//		final float pWidth = resourcesManager.applyResizeFactor( pJsonDataEntity.getWidth() );
+//		final float pHeight = resourcesManager.applyResizeFactor( pJsonDataEntity.getHeight() );
+		ITextureRegion pRegion = null;
+
+		if ( pJsonDataEntity.getName().equals( "prickleV108x35" ) ) {
+			pRegion = resourcesManager.regionPrickleV108x35;
 		}
 
+		Sprite tPrickle = new Sprite( pX, pY, pRegion, vbom );
+		tPrickle.setColor( pJsonDataEntity.getColor() );
+		attachChild( tPrickle );
 	}
 
 	private void attachGroundRectEntity( JsonDataEntity pJsonDataEntity ) {
@@ -298,7 +330,11 @@ public class SceneGame extends BaseScene implements IOnSceneTouchListener {
 		tRect.createPhysics( pUserName, pJsonDataBrick.getBodyType(),
 				pJsonDataBrick.getFixtureDef() );
 		tRect.setColor( pJsonDataBrick.getColor() );
+
 		attachChild( tRect );
+
+		this.mMapRectBrick.put( pUserName, tRect );
+
 	}
 
 	private void attachHaloOfBall( JsonDataEntity pJsonDataEntity ) {

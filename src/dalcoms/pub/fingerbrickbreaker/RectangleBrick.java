@@ -1,5 +1,20 @@
 package dalcoms.pub.fingerbrickbreaker;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.andengine.engine.handler.timer.ITimerCallback;
+import org.andengine.engine.handler.timer.TimerHandler;
+import org.andengine.extension.physics.box2d.PhysicsWorld;
+
+import android.util.Log;
+
+import com.badlogic.gdx.physics.box2d.Contact;
+import com.badlogic.gdx.physics.box2d.ContactImpulse;
+import com.badlogic.gdx.physics.box2d.ContactListener;
+import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.physics.box2d.Manifold;
+
 import dalcoms.pub.fingerbrickbreaker.scene.SceneGame;
 
 public class RectangleBrick extends RectanglePhysics {
@@ -25,9 +40,7 @@ public class RectangleBrick extends RectanglePhysics {
 
 	@Override
 	public void onUpdateCheck( ) {
-		if ( checkBreakMySelf( checkCollisionWithBall() ) == true ) {
-			this.scaleAlphaByeBye( 0.5f );
-		}
+
 	}
 
 	private boolean checkCollisionWithBall( ) {
@@ -46,9 +59,23 @@ public class RectangleBrick extends RectanglePhysics {
 			if ( pBreakLevel > 0 ) {
 				setBreakLevel( pBreakLevel );
 				this.breakMySelf();
-			} else if ( pBreakLevel == 0 ) {
+			} else {
 				result = true;
 			}
+		}
+		return result;
+	}
+
+	public boolean checkBreakMySelf( ) {
+		//		if break level reach to zero, byebye myself
+		boolean result = false;
+
+		final int pBreakLevel = getBreakLevel() - 1;
+		if ( pBreakLevel > 0 ) {
+			setBreakLevel( pBreakLevel );
+			this.breakMySelf();
+		} else {
+			result = true;
 		}
 		return result;
 	}
@@ -59,5 +86,15 @@ public class RectangleBrick extends RectanglePhysics {
 		} else {
 			this.setHeight( this.getHeight() * 0.5f );
 		}
+		
+		this.getGameScene().getEngine().registerUpdateHandler( new TimerHandler( 0.05f, new ITimerCallback() {
+			
+			@Override
+			public void onTimePassed( TimerHandler pTimerHandler ) {
+				getGameScene().getEngine().unregisterUpdateHandler( pTimerHandler );
+				reCreateBody();
+			}
+		} ) );
 	}
+
 }

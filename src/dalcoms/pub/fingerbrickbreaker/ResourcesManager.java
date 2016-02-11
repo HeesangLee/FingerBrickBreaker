@@ -76,6 +76,7 @@ public class ResourcesManager {
 	public ITextureRegion regionLevelButtonBg;
 	public ITiledTextureRegion regionLevelButtonLevelBg;
 	public ITiledTextureRegion regionLevelButtonAchievment;
+	public ITextureRegion regionPrickleV108x35;
 
 	// Sound
 	private static final int FONT_SIZE_DEFAULT = 64;
@@ -366,6 +367,12 @@ public class ResourcesManager {
 						this.activity, "circle.svg",
 						this.applyResizeFactor( 225 ),
 						this.applyResizeFactor( 225 ) );
+
+		regionPrickleV108x35 = SVGBitmapTextureAtlasTextureRegionFactory
+				.createFromAsset( this.atlasNearest,
+						this.activity, "prickleV108x35.svg",
+						this.applyResizeFactor( 108 ),
+						this.applyResizeFactor( 35 ) );
 
 		try {
 			atlasNearest

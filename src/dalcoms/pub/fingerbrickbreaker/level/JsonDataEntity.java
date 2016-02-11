@@ -21,6 +21,9 @@ public class JsonDataEntity {
 
 	@SerializedName( "size" )
 	private EntitySize size;
+	
+	@SerializedName("rotation")
+	private String rotation;
 
 	@SerializedName( "physics" )
 	private EntityPhysics physics;
@@ -51,6 +54,10 @@ public class JsonDataEntity {
 
 	public float getHeight( ) {
 		return size.getHeight();
+	}
+	
+	public float getRotation(){
+		return Float.valueOf( this.rotation );
 	}
 
 	public BodyType getBodyType( ) {
