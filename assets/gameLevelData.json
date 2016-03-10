@@ -991,8 +991,8 @@
 						"fixtureDef": 
 						{
 							"density": "0.1",
-							"elasticity": "0.6",
-							"friction": "0.1"
+							"elasticity": "0.5",
+							"friction": "0.2"
 						}
 					}
 				}

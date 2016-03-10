@@ -1,17 +1,14 @@
 package dalcoms.pub.fingerbrickbreaker.scene;
 
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Random;
 
-import lib.dalcoms.andengineheesanglib.buttons.IconTextButtonSprite;
-import lib.dalcoms.andengineheesanglib.buttons.LevelViewButton;
 import lib.dalcoms.andengineheesanglib.utils.HsMath;
 
 import org.andengine.engine.Engine;
 import org.andengine.engine.camera.Camera;
-import org.andengine.entity.modifier.IEntityModifier;
 import org.andengine.entity.modifier.LoopEntityModifier;
+import org.andengine.entity.modifier.MoveXModifier;
+import org.andengine.entity.modifier.ParallelEntityModifier;
 import org.andengine.entity.modifier.ScaleModifier;
 import org.andengine.entity.modifier.SequenceEntityModifier;
 import org.andengine.entity.primitive.Rectangle;
@@ -21,7 +18,6 @@ import org.andengine.entity.sprite.Sprite;
 import org.andengine.entity.text.Text;
 import org.andengine.input.touch.TouchEvent;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
-import org.andengine.util.color.Color;
 import org.andengine.util.modifier.ease.EaseBackOut;
 import org.andengine.util.modifier.ease.EaseCircularIn;
 
@@ -32,8 +28,6 @@ import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Point;
-import android.graphics.PointF;
 import android.net.Uri;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.app.NotificationCompat.Builder;
@@ -49,16 +43,29 @@ public class SceneHome extends BaseScene {
 	HsMath hsMath = new HsMath();
 
 	boolean flag_interstitialAdOn = false;
-	ArrayList<LevelViewButton> mLevelViewButtons = new ArrayList<LevelViewButton>();
+	//	ArrayList<LevelViewButton> mLevelViewButtons = new ArrayList<LevelViewButton>();
 
 	Rectangle mRoundImgBgRect;
-	Text mTextRoundNum;
+	Text mTextRoundKind;
 	Text mTextRoundPoint;
+	Text mTextRoundNum;
+	Sprite mSpriteArrowRight;
+	Sprite mSpriteArrowLeft;
+	Sprite mSpriteLockSymbol;
+
+	private int mFocusedRound = 0; //Kind of Round -Default round=0, Custom Round=1, Download Round=2
+	private int mFocusedRoundNum = 0;
+	private int mDefaultRoundCount;
+
+	private int mPreTouchOfRound;
+	private final float mCameraWidth = camera.getWidth();
 
 	@Override
 	public void createScene( ) {
 		this.setBackground( new Background( this.appColor.APP_BACKGROUND ) );
 		// prepareNotificationTest();
+
+		initScene();
 
 		this.engine.runOnUpdateThread( new Runnable() {
 			@Override
@@ -68,26 +75,86 @@ public class SceneHome extends BaseScene {
 		} );
 	}
 
+	private void initScene( ) {
+		setFocusedRoundNum( getLastRoundNum() );
+		mDefaultRoundCount = sceneManager.getDefaultRounFileNames().size();
+	}
+
+	private int getDefaultRoundCount( ) {
+		return this.mDefaultRoundCount;
+	}
+
 	@Override
 	public void attachSprites( ) {
 		this.attachMarketShareStarAnimatedSprites();
 		this.attachTitileText();
 		this.attachCompanyText();
-		this.attachPlayButtonSprite();
+		//		this.attachPlayButtonSprite();
 		this.attachRoundImgBgRect();
+		//		this.attachRoundTouchArea();
 		this.attachRoundNumberPointText();
+		//		this.attachLeftRightArrow();
 		//		this.attachLevelButtons();
 	}
 
-	private int getSelectedLevel( ) {
-		int ret = 0;
-		for ( LevelViewButton btn : mLevelViewButtons ) {
-			if ( btn.isSelected() ) {
-				ret = btn.getIntTag();
-				break;
+	private int getLastRoundNum( ) {
+		return sceneManager.getLastRoundInfoIndex();
+	}
+
+	private int getFocusedRoundNum( ) {
+		return this.mFocusedRoundNum;
+	}
+
+	private int setFocusedRoundNum( int pRoundNum ) {
+		this.mFocusedRoundNum = pRoundNum;
+		return this.mFocusedRoundNum;
+	}
+
+	private void setFocusedRoundNumShift( int pShiftNum ) {
+		int pRoundNum = getFocusedRoundNum() + pShiftNum;
+		Log.v( "roundNum", String.valueOf( pRoundNum ) );
+		if ( ( pRoundNum > -1 ) && ( pRoundNum < getDefaultRoundCount() ) ) {
+			setRoundString( setFocusedRoundNum( pRoundNum ), true );
+			if ( pRoundNum == 0 ) {
+				mSpriteArrowLeft.setVisible( false );
+			} else {
+				mSpriteArrowLeft.setVisible( true );
+			}
+
+			if ( sceneManager.getRoundInfoMap().containsKey( pRoundNum ) ) {
+				setRoundPointText( sceneManager.getRoundInfoMap().get( getFocusedRoundNum() ).getPoint(),
+						true );
+				if ( sceneManager.getRoundInfoMap().get( pRoundNum ).isUnLock() ) {
+					mSpriteArrowRight.setVisible( true );
+					if ( mSpriteLockSymbol != null ) {
+						mSpriteLockSymbol.setVisible( false );
+					}
+				} else {//lock
+					mSpriteArrowRight.setVisible( false );
+					if ( mSpriteLockSymbol != null ) {
+						mSpriteLockSymbol.setVisible( true );
+					}
+				}
+			} else {
+				setRoundPointText( "NO", true );
+				mSpriteArrowRight.setVisible( false );
+				if ( mSpriteLockSymbol != null ) {
+					mSpriteLockSymbol.setVisible( true );
+					shakeUnLockSymbol();
+				}
 			}
 		}
-		return ret;
+	}
+
+	private void shakeUnLockSymbol( ) {
+		final float pDuration = 0.07f;
+		final float pX = hsMath.getAlignCenterFloat( resourcesManager.regionRoundLock.getWidth(),
+				this.mCameraWidth );
+		final float pMoveX = resourcesManager.applyResizeFactor( 70f );
+		this.mSpriteLockSymbol.registerEntityModifier( new SequenceEntityModifier(
+				new MoveXModifier( pDuration, pX, pX + pMoveX ),
+				new MoveXModifier( pDuration * 2f, pX + pMoveX, pX - pMoveX ),
+				new MoveXModifier( pDuration, pX - pMoveX, pX ) ) );
 	}
 
 	private void attachRoundNumberPointText( ) {
@@ -105,53 +172,196 @@ public class SceneHome extends BaseScene {
 		attachChild( bgRectRoundNum );
 		attachChild( bgRectRoundPoint );
 
-		mTextRoundNum = new Text( 0, 0, resourcesManager.getFontButton(), "ROUND ##", vbom );
-		mTextRoundPoint = new Text( 0, 0, resourcesManager.getFontButton(), "### POINT", vbom );
-		bgRectRoundNum.attachChild( mTextRoundNum );
+		mTextRoundKind = new Text( 0, 0, resourcesManager.getFontButton(), "  ROUND  ", vbom );
+		mTextRoundPoint = new Text( 0, 0, resourcesManager.getFontButton(), "   NO POINT   ", vbom );
+		bgRectRoundNum.attachChild( mTextRoundKind );
 		bgRectRoundPoint.attachChild( mTextRoundPoint );
 
-		final float pXRoundNum = hsMath.getAlignCenterFloat( mTextRoundNum.getWidth(), camera.getWidth() );
-		final float pYRoundNum = hsMath.getAlignCenterFloat( mTextRoundNum.getHeight(),
+		final float pXRoundNum = hsMath.getAlignCenterFloat( mTextRoundKind.getWidth(), camera.getWidth() );
+		final float pYRoundNum = hsMath.getAlignCenterFloat( mTextRoundKind.getHeight(),
 				bgRectRoundNum.getHeight() );
 
 		final float pXRoundPoint = hsMath.getAlignCenterFloat( mTextRoundPoint.getWidth(), camera.getWidth() );
 		final float pYRoundPoint = hsMath.getAlignCenterFloat( mTextRoundPoint.getHeight(),
 				bgRectRoundPoint.getHeight() );
 
-		mTextRoundNum.setPosition( pXRoundNum, pYRoundNum );
+		mTextRoundKind.setPosition( pXRoundNum, pYRoundNum );
 		mTextRoundPoint.setPosition( pXRoundPoint, pYRoundPoint );
+
+		if ( sceneManager.getRoundInfoMap().containsKey( getFocusedRoundNum() ) ) {
+			setRoundPointText( sceneManager.getRoundInfoMap().get( getFocusedRoundNum() ).getPoint(),
+					true );
+		}
 	}
 
-	private void setRoundNumberPointText( int pRoundNum, int pRoundPoint, boolean pNewTextEffect ) {
-		mTextRoundNum.setText( "ROUND " + String.valueOf( pRoundNum ) );
-		mTextRoundPoint.setText( String.valueOf( pRoundPoint ) + " POINT" );
+	private void setRoundPointText( int pRoundPoint, boolean pNewTextEffect ) {
+		if ( mTextRoundPoint != null ) {
+			mTextRoundPoint.setText( String.valueOf( pRoundPoint ) + " POINT" );
 
-		final float pXRoundNum = hsMath.getAlignCenterFloat( mTextRoundNum.getWidth(), camera.getWidth() );
-		final float pXRoundPoint = hsMath.getAlignCenterFloat( mTextRoundPoint.getWidth(), camera.getWidth() );
-		mTextRoundNum.setPosition( pXRoundNum, mTextRoundNum.getY() );
-		mTextRoundPoint.setPosition( pXRoundPoint, mTextRoundPoint.getY() );
+			final float pXRoundPoint = hsMath.getAlignCenterFloat( mTextRoundPoint.getWidth(),
+					camera.getWidth() );
+			mTextRoundPoint.setPosition( pXRoundPoint, mTextRoundPoint.getY() );
 
-		if ( pNewTextEffect == true ) {
-			mTextRoundNum.registerEntityModifier( new ScaleModifier( 0.4f, 0.05f, 1f ) );
-			mTextRoundPoint.registerEntityModifier( new ScaleModifier( 0.4f, 0.05f, 1f ) );
+			if ( pNewTextEffect == true ) {
+				mTextRoundPoint.registerEntityModifier( new ScaleModifier( 0.3f, 0.05f, 1f ) );
+			}
+		}
+	}
+
+	private void setRoundPointText( String pRoundPoint, boolean pNewTextEffect ) {
+		if ( mTextRoundPoint != null ) {
+			mTextRoundPoint.setText( pRoundPoint + " POINT" );
+
+			final float pXRoundPoint = hsMath.getAlignCenterFloat( mTextRoundPoint.getWidth(),
+					camera.getWidth() );
+			mTextRoundPoint.setPosition( pXRoundPoint, mTextRoundPoint.getY() );
+
+			if ( pNewTextEffect == true ) {
+				mTextRoundPoint.registerEntityModifier( new ScaleModifier( 0.3f, 0.05f, 1f ) );
+			}
+		}
+	}
+
+	private void attachLeftRightArrow( ) {
+		final float pXLeft = resourcesManager.applyResizeFactor( 28f );
+		final float pXright = mCameraWidth - ( pXLeft + resourcesManager.regionArrowRight.getWidth() );
+
+		final float pY = ( this.mRoundImgBgRect.getHeight() - resourcesManager.regionArrowRight.getHeight() )
+				/ 2f + this.mRoundImgBgRect.getY();
+		this.mSpriteArrowLeft = new Sprite( pXLeft, pY, resourcesManager.regionArrowRight, vbom );
+		this.mSpriteArrowLeft.setFlippedHorizontal( true );
+		this.mSpriteArrowRight = new Sprite( pXright, pY, resourcesManager.regionArrowRight, vbom );
+
+		attachChild( mSpriteArrowLeft );
+		attachChild( mSpriteArrowRight );
+	}
+
+	private void attachLockSymbol( ) {
+		final float pX = hsMath.getAlignCenterFloat( resourcesManager.regionRoundLock.getWidth(),
+				this.mCameraWidth );
+		final float pY = hsMath.getAlignCenterFloat( resourcesManager.regionRoundLock.getHeight(),
+				mRoundImgBgRect.getHeight() ) + this.mRoundImgBgRect.getY();
+
+		this.mSpriteLockSymbol = new Sprite( pX, pY, resourcesManager.regionRoundLock, vbom );
+
+		attachChild( mSpriteLockSymbol );
+		mSpriteLockSymbol.setVisible( false );
+	}
+
+	private int getPositionOfRound( float pTouchAreaLocalX ) {//-1:left, 0:center, 1:right
+		int result = 0;
+
+		if ( pTouchAreaLocalX < this.mCameraWidth * 0.2f ) {
+			result = -1;
+		} else if ( pTouchAreaLocalX > this.mCameraWidth * 0.8f ) {
+			result = 1;
 		}
 
+		return result;
 	}
 
 	private void attachRoundImgBgRect( ) {
-		final float pWidth = camera.getWidth();
+		final float pWidth = mCameraWidth;
 		final float pHeight = resourcesManager.applyResizeFactor( 408f );
-		this.mRoundImgBgRect = new Rectangle( 0, 0, pWidth, pHeight, vbom );
+		this.mRoundImgBgRect = new Rectangle( 0, 0, pWidth, pHeight, vbom ) {
+			@Override
+			public boolean onAreaTouched( TouchEvent pSceneTouchEvent, float pTouchAreaLocalX,
+					float pTouchAreaLocalY ) {
+				if ( pSceneTouchEvent.isActionDown() ) {
+
+					mPreTouchOfRound = getPositionOfRound( pTouchAreaLocalX );
+
+					if ( mPreTouchOfRound == -1 ) {
+						if ( mSpriteArrowLeft.isVisible() ) {
+							resourcesManager.getVibrator().vibrate( 30 );
+							setFocusedRoundNumShift( -1 );
+							mSpriteArrowLeft.registerEntityModifier( new SequenceEntityModifier(
+									new ScaleModifier( 0.15f, 1f, 1.5f ),
+									new ScaleModifier( 0.15f, 1.5f, 1f ) ) );
+						}
+					} else if ( mPreTouchOfRound == 1 ) {
+						if ( mSpriteArrowRight.isVisible() ) {
+							resourcesManager.getVibrator().vibrate( 30 );
+							setFocusedRoundNumShift( 1 );
+							mSpriteArrowRight.registerEntityModifier( new SequenceEntityModifier(
+									new ScaleModifier( 0.15f, 1f, 1.5f ),
+									new ScaleModifier( 0.15f, 1.5f, 1f ) ) );
+						}
+					} else {//Center
+						resourcesManager.getVibrator().vibrate( 40 );
+						if ( mSpriteLockSymbol.isVisible() ) {
+							shakeUnLockSymbol();
+						}
+					}
+				} else {
+					if ( pSceneTouchEvent.isActionUp() ) {
+						mSpriteArrowLeft.setScale( 1f );
+						mSpriteArrowRight.setScale( 1f );
+						if ( mPreTouchOfRound == getPositionOfRound( pTouchAreaLocalX ) ) {
+							//							Log.v( "touch", String.valueOf( getPositionOfRound( pTouchAreaLocalX ) ) );
+							if ( mPreTouchOfRound == 0 ) {//center....round selected---goto game through replay scene.....
+								if ( !mSpriteLockSymbol.isVisible() ) {
+									sceneManager.createSceneReplay(getFocusedRoundNum());
+								}
+							}
+						}
+					}
+
+				}
+				return super.onAreaTouched( pSceneTouchEvent, pTouchAreaLocalX, pTouchAreaLocalY );
+			}
+		};
 		final float pX = 0f;
 		final float pY = hsMath.getAlignCenterFloat( mRoundImgBgRect.getHeight(), camera.getHeight() );
+
+		String roundTextStr = "999";
+
 		mRoundImgBgRect.setPosition( pX, pY );
 		mRoundImgBgRect.setColor( appColor.ROUND_IMG_BG );
 		attachChild( mRoundImgBgRect );
+		//		registerTouchArea( mRoundImgBgRect );
+
+		mTextRoundNum = new Text( 0, 0, resourcesManager.getFontRoundMenu(), roundTextStr, vbom );
+		mRoundImgBgRect.attachChild( mTextRoundNum );
+		final float pTextY = hsMath.getAlignCenterFloat( mTextRoundNum.getHeight(),
+				mRoundImgBgRect.getHeight() );
+		mTextRoundNum.setPosition( 0, pTextY );
+
+		this.attachLeftRightArrow();
+		setFocusedRoundNumShift( 0 );
+		attachLockSymbol();
+
+		engine.runOnUpdateThread( new Runnable() {
+
+			@Override
+			public void run( ) {
+				registerTouchArea( mRoundImgBgRect );
+			}
+		} );
 
 	}
 
+	private void setRoundString( int pRoundNum, boolean pNewTextEffect ) {
+		String roundtextstr = "";
+
+		if ( mFocusedRound == 0 ) {//default
+			roundtextstr = String.valueOf( pRoundNum + 1 );
+
+		} else {
+			//get file name of round with index;
+		}
+		mTextRoundNum.setText( String.valueOf( roundtextstr ) );
+
+		final float pXRoundNum = hsMath.getAlignCenterFloat( mTextRoundNum.getWidth(), camera.getWidth() );
+		mTextRoundNum.setPosition( pXRoundNum, mTextRoundNum.getY() );
+
+		if ( pNewTextEffect == true ) {
+			mTextRoundNum.registerEntityModifier( new ScaleModifier( 0.2f, 0.05f, 1f ) );
+		}
+	}
+
 	private void attachTitileText( ) {
-		final float pY = resourcesManager.applyResizeFactor( 138f );
+		final float pY = resourcesManager.applyResizeFactor( 261f );//138f );
 		Text pTitleText = new Text( 0, 0, resourcesManager.getFontDefault(),
 				activity.getString( R.string.app_name ), vbom );
 		pTitleText.setPosition( appComm.getAlignCenterFloat( pTitleText.getWidth(), camera.getWidth() ), pY );
@@ -286,7 +496,7 @@ public class SceneHome extends BaseScene {
 	public Camera getCamera( ) {
 		return this.camera;
 	}
-	
+
 	@Override
 	public ResourcesManager getResourcesManager( ) {
 		return this.resourcesManager;

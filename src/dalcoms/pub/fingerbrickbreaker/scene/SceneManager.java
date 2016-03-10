@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-
-import lib.dalcoms.andengineheesanglib.utils.HsMath;
-import lib.dalcoms.data.GameLevel;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.andengine.ui.IGameInterface.OnCreateSceneCallback;
 
@@ -48,6 +48,11 @@ public class SceneManager {
 	//	private GameLevel mGameLevel = new GameLevel();
 
 	private JsonDataLevelData mLevelData;
+	private ArrayList<String> mDefaultRoundFiles;
+	final String mGameRoundAssetSubFolderName = "game_round";
+	private Map<Integer, RoundInfo> roundInfoMap = new HashMap<Integer, SceneManager.RoundInfo>();
+
+	private int mSelectedRoundNum = 0;
 
 	public static SceneManager getInstance( ) {
 		return instance;
@@ -56,11 +61,76 @@ public class SceneManager {
 	public void initGameLevelData( ) {// Load data from local repository
 										// database.
 
-		new LoadJsonLevelDataTask().execute();
+		//		new LoadJsonLevelDataTask().execute();
+		new LoadJsonDefaultRoundFilesTask().execute();
 	}
 
 	public JsonDataLevelData getLevelData( ) {
 		return this.mLevelData;
+	}
+
+	public ArrayList<String> getDefaultRounFileNames( ) {
+		return this.mDefaultRoundFiles;
+	}
+
+	public Map<Integer, RoundInfo> getRoundInfoMap( ) {
+		return roundInfoMap;
+	}
+
+	public void setRoundInfoMap( Integer k, RoundInfo pRoundInfo ) {
+		this.roundInfoMap.put( k, pRoundInfo );
+	}
+
+	public String getLastRoundInfoKey( ) {
+		String result = "";
+
+		result = getDefaultRounFileNames().get( getLastRoundInfoIndex() );
+
+		return result;
+	}
+
+	public int getLastRoundInfoIndex( ) {
+		int result = 0;
+
+		if ( getRoundInfoMap().isEmpty() ) {
+			setRoundInfoMap( 0, new RoundInfo( true, 0 ) );
+			result = 0;
+		} else {
+			for ( Integer k : getRoundInfoMap().keySet() ) {
+				if ( k > result ) {
+					result = k;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	private class LoadJsonDefaultRoundFilesTask extends AsyncTask<Void, Void, ArrayList<String>> {
+
+		@Override
+		protected void onPreExecute( ) {
+			mDefaultRoundFiles = new ArrayList<String>();//Always clear arrayList before loading.
+		}
+
+		@Override
+		protected ArrayList<String> doInBackground( Void... params ) {
+			ArrayList<String> result = new ArrayList<String>();
+
+			try {
+				result.addAll( Arrays.asList( ResourcesManager.getInstance().getActivity().getAssets()
+						.list( mGameRoundAssetSubFolderName ) ) );
+
+			} catch ( IOException e ) {
+				e.printStackTrace();
+			}
+			return result;
+		}
+
+		@Override
+		protected void onPostExecute( ArrayList<String> result ) {
+			mDefaultRoundFiles = result;
+		}
 	}
 
 	private class LoadJsonLevelDataTask extends AsyncTask<Void, Void, JsonDataLevelData> {
@@ -163,7 +233,7 @@ public class SceneManager {
 		this.setScene( this.sceneHome );
 	}
 
-	public void createSceneReplay( ) {
+	public void createSceneReplay( int pDefaultRoundNum ) {
 		if ( ++countReplay > POP_AD_REPLAY ) {
 			countReplay = 0;
 			this.popAdmobInterstitialAd();
@@ -253,5 +323,39 @@ public class SceneManager {
 
 	public float getGameTimerTimeSecond( ) {
 		return GAME_TIMER_TIME_SECOND;
+	}
+
+	private void setSelectedRoundNum( int pRoundNum ) {
+		this.mSelectedRoundNum = pRoundNum;
+	}
+
+	public int getSelectedRoundNum( ) {
+		return this.mSelectedRoundNum;
+	}
+
+	public class RoundInfo {
+		private boolean mUnLock;
+		private int mPoint;
+
+		public RoundInfo( boolean pUnLock, int pPoint ) {
+			mUnLock = pUnLock;
+			mPoint = pPoint;
+		}
+
+		public void setClear( boolean pUnLock ) {
+			this.mUnLock = pUnLock;
+		}
+
+		public void setPoint( int pPOint ) {
+			this.mPoint = pPOint;
+		}
+
+		public boolean isUnLock( ) {
+			return mUnLock;
+		}
+
+		public int getPoint( ) {
+			return mPoint;
+		}
 	}
 }

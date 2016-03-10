@@ -1,9 +1,16 @@
 package dalcoms.pub.fingerbrickbreaker;
 
+import org.andengine.entity.IEntity;
+import org.andengine.entity.modifier.AlphaModifier;
+import org.andengine.entity.modifier.ParallelEntityModifier;
+import org.andengine.entity.modifier.ScaleModifier;
 import org.andengine.entity.sprite.Sprite;
 import org.andengine.input.touch.TouchEvent;
 import org.andengine.opengl.texture.region.ITextureRegion;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
+import org.andengine.util.color.Color;
+
+import android.util.Log;
 
 import dalcoms.pub.fingerbrickbreaker.scene.SceneGame;
 
@@ -11,6 +18,7 @@ public class HaloOfBallSprite extends Sprite {
 
 	private SceneGame mSceneGame;
 	private boolean flagSelected = false;
+	private Color mDefaultColor;
 
 	public HaloOfBallSprite( float pX, float pY, ITextureRegion pTextureRegion,
 			VertexBufferObjectManager pVertexBufferObjectManager ) {
@@ -44,6 +52,15 @@ public class HaloOfBallSprite extends Sprite {
 		}
 	}
 
+	public void setDefaultColor( Color pColor ) {
+		mDefaultColor = pColor;
+		this.setColor( pColor );
+	}
+
+	public Color getDefaultColor( ) {
+		return mDefaultColor;
+	}
+
 	public float getCenterX( ) {
 		return this.getX() + this.getWidth() * 0.5f;
 	}
@@ -56,4 +73,30 @@ public class HaloOfBallSprite extends Sprite {
 		this.setPosition( pCenterX - this.getWidth() * 0.5f, pCenterY - this.getHeight() * 0.5f );
 	}
 
+	public void explode( float pDuration ) {
+		this.setColor( AppColor.getInstance().BALL );
+
+		this.registerEntityModifier( new ParallelEntityModifier(
+				new ScaleModifier( pDuration, 0.6f, 3f ),
+				new AlphaModifier( pDuration, 0.8f, 0f ) ) {
+			@Override
+			protected void onModifierFinished( IEntity pItem ) {
+				// TODO Auto-generated method stub
+				super.onModifierFinished( pItem );
+				resetMe();
+			}
+		} );
+	}
+
+	private void resetMe( ) {
+		mSceneGame.getEngine().runOnUpdateThread( new Runnable() {
+
+			@Override
+			public void run( ) {
+				setVisible( false );
+				setColor( getDefaultColor() );
+				setScale( 1f );
+			}
+		} );
+	}
 }

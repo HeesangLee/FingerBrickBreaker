@@ -15,8 +15,8 @@ import android.app.Activity;
 
 public class SceneReplay extends BaseScene {
 
-	private final float ARROW_INTERNAL = 0.07f;
-	private final int ARROW_NUM = 7;
+	private final float ARROW_INTERNAL = 0.12f;
+	private final int ARROW_NUM = 8;
 	private int displayedArrowIndex = 0;
 	private float arrowPositionX[];
 	private float arrowPositionY;
@@ -69,11 +69,11 @@ public class SceneReplay extends BaseScene {
 		Sprite tSprite = new Sprite( arrowPositionX[displayedArrowIndex++],
 				pY, resourcesManager.regionArrow, vbom );
 		if ( displayedArrowIndex < arrowPositionX.length ) {
-			tSprite.registerEntityModifier( new AlphaModifier( 0.4f, 1f, 0f ) );
+			tSprite.registerEntityModifier( new AlphaModifier( 0.45f, 1f, 0f ) );
 		}
 		attachChild( tSprite );
 	}
-
+	
 	@Override
 	public void onBackKeyPressed( ) {
 		// TODO Auto-generated method stub

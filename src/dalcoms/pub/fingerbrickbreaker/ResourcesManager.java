@@ -77,12 +77,18 @@ public class ResourcesManager {
 	public ITiledTextureRegion regionLevelButtonLevelBg;
 	public ITiledTextureRegion regionLevelButtonAchievment;
 	public ITextureRegion regionPrickleV108x35;
+	public ITextureRegion regionCoin50;
+	public ITextureRegion regionArrowRight;
+	public ITextureRegion regionRoundLock;
 
 	// Sound
 	private static final int FONT_SIZE_DEFAULT = 64;
 	private static final int FONT_SIZE_BUTTON = 48;
+	private static final int FONT_SIZE_ROUNDMENU = 256;
 	private Font fontDefault;
 	private Font fontButton;
+	private Font fontPoint;
+	private Font fontRoundMenu;
 
 	private Sound soundIntro;
 
@@ -223,6 +229,17 @@ public class ResourcesManager {
 						this.activity, "circle.svg",
 						this.applyResizeFactor( 80 ),
 						this.applyResizeFactor( 80 ) );
+		regionCoin50 = SVGBitmapTextureAtlasTextureRegionFactory
+				.createFromAsset( this.atlasBilinearPremultiplyAlpha,
+						this.activity, "coin_50x50.svg",
+						this.applyResizeFactor( 50 ),
+						this.applyResizeFactor( 50 ) );
+
+		regionRoundLock = SVGBitmapTextureAtlasTextureRegionFactory
+				.createFromAsset( this.atlasBilinearPremultiplyAlpha,
+						this.activity, "roundlock_300x300.svg",
+						this.applyResizeFactor( 300 ),
+						this.applyResizeFactor( 300 ) );
 
 		try {
 			atlasBilinearPremultiplyAlpha
@@ -307,6 +324,10 @@ public class ResourcesManager {
 				this.applyResizeFactor( 100 ),
 				2,
 				1 );
+
+		regionArrowRight = SVGBitmapTextureAtlasTextureRegionFactory.createFromAsset(
+				this.atlasBilinear, this.activity, "arrowright_80x160.svg",
+				this.applyResizeFactor( 80 ), this.applyResizeFactor( 160 ) );
 
 		regionTriangle = SVGBitmapTextureAtlasTextureRegionFactory.createFromAsset(
 				this.atlasBilinear, this.activity, "play_35x42.svg",
@@ -398,6 +419,11 @@ public class ResourcesManager {
 				( int ) applyResizeFactor( camera.getWidth() ),
 				( int ) applyResizeFactor( 512f ), TextureOptions.BILINEAR );
 
+		final ITexture tFontTexturePoint = new BitmapTextureAtlas(
+				activity.getTextureManager(),
+				( int ) applyResizeFactor( camera.getWidth() ),
+				( int ) applyResizeFactor( 512f ), TextureOptions.BILINEAR );
+
 		this.fontDefault = FontFactory.createFromAsset(
 				activity.getFontManager(), tFontTextureDefault,
 				activity.getAssets(), "UbuntuB.ttf", FONT_SIZE_DEFAULT, true,
@@ -410,6 +436,18 @@ public class ResourcesManager {
 				AppColor.getInstance().WHITE.getABGRPackedInt() );
 		this.fontButton.load();
 
+		this.fontPoint = FontFactory.createFromAsset(
+				activity.getFontManager(), tFontTexturePoint,
+				activity.getAssets(), "UbuntuB.ttf", FONT_SIZE_DEFAULT, true,
+				AppColor.getInstance().BALL.getABGRPackedInt() );
+		this.fontPoint.load();
+
+		this.fontRoundMenu = FontFactory.createFromAsset(
+				activity.getFontManager(), tFontTexturePoint,
+				activity.getAssets(), "UbuntuB.ttf", FONT_SIZE_ROUNDMENU, true,
+				AppColor.getInstance().BALL.getABGRPackedInt() );
+		this.fontRoundMenu.load();
+
 	}
 
 	public Font getFontDefault( ) {
@@ -418,5 +456,13 @@ public class ResourcesManager {
 
 	public Font getFontButton( ) {
 		return this.fontButton;
+	}
+
+	public Font getFontPoint( ) {
+		return this.fontPoint;
+	}
+
+	public Font getFontRoundMenu( ) {
+		return this.fontRoundMenu;
 	}
 }

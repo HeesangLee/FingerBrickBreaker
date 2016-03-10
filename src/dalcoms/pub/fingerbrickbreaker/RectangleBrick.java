@@ -43,6 +43,14 @@ public class RectangleBrick extends RectanglePhysics {
 
 	}
 
+	public float getCenterX( ) {
+		return getX() + getWidth() * 0.5f;
+	}
+
+	public float getCenterY( ) {
+		return getY() + getHeight() * 0.5f;
+	}
+
 	private boolean checkCollisionWithBall( ) {
 		boolean result = false;
 		if ( this.collidesWith( getGameScene().getMainBall() ) ) {
@@ -86,9 +94,9 @@ public class RectangleBrick extends RectanglePhysics {
 		} else {
 			this.setHeight( this.getHeight() * 0.5f );
 		}
-		
+
 		this.getGameScene().getEngine().registerUpdateHandler( new TimerHandler( 0.05f, new ITimerCallback() {
-			
+
 			@Override
 			public void onTimePassed( TimerHandler pTimerHandler ) {
 				getGameScene().getEngine().unregisterUpdateHandler( pTimerHandler );

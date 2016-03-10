@@ -125,7 +125,7 @@ public abstract class BallSprite extends Sprite {
 			};
 		}
 //		TODO : must be defined on json file.
-		this.body.setLinearDamping( 0.5f );
+		this.body.setLinearDamping( 0.2f );
 		
 		mPhysicsWorld.registerPhysicsConnector( mPhysicsConnector );
 

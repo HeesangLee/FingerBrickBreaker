@@ -21,8 +21,8 @@ public class JsonDataEntity {
 
 	@SerializedName( "size" )
 	private EntitySize size;
-	
-	@SerializedName("rotation")
+
+	@SerializedName( "rotation" )
 	private String rotation;
 
 	@SerializedName( "physics" )
@@ -44,6 +44,19 @@ public class JsonDataEntity {
 		return position.getY();
 	}
 
+	public void setX( float pX ) {
+		position.setX( pX );
+	}
+
+	public void setY( float pY ) {
+		position.setY( pY );
+	}
+
+	public void setPosition( float pX, float pY ) {
+		this.setX( pX );
+		this.setY( pY );
+	}
+
 	public String getLayout( ) {
 		return position.getLayout();
 	}
@@ -55,8 +68,8 @@ public class JsonDataEntity {
 	public float getHeight( ) {
 		return size.getHeight();
 	}
-	
-	public float getRotation(){
+
+	public float getRotation( ) {
 		return Float.valueOf( this.rotation );
 	}
 
@@ -106,6 +119,19 @@ public class JsonDataEntity {
 
 		public float getY( ) {
 			return Float.valueOf( y );
+		}
+
+		public void setX( float pX ) {
+			x = String.valueOf( pX );
+		}
+
+		public void setY( float pY ) {
+			y = String.valueOf( pY );
+		}
+
+		public void setPosition( float pX, float pY ) {
+			this.setX( pX );
+			this.setY( pY );
 		}
 
 		public String getLayout( ) {
